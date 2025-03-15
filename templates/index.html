@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parchat</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1000px; /* Increased from 800px */
+            margin: 0 auto; 
+            padding: 20px; 
+            font-size: 18px; /* Added to increase text size */
+        }
+        #chat-area { 
+            height: 500px;  
+            border: 1px solid #ccc; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            overflow-y: auto; 
+        }
+        #user-input { 
+            width: 85%; 
+            padding: 12px; 
+            font-size: 16px; 
+        }
+        button { 
+            padding: 12px 20px; 
+            background-color:rgb(49, 56, 164); 
+            color: white; 
+            border: none; 
+            font-size: 16px; 
+        }
+        h1 {
+            font-size: 2.5rem; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Parchat</h1>
+    <div id="chat-area">
+        <p><strong>Parchat:</strong> Hello! How can I help you today?</p>
+    </div>
+    <input type="text" id="user-input" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const chatArea = document.getElementById('chat-area');
+            const message = userInput.value;
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            chatArea.innerHTML += `<p><strong>You:</strong> ${message}</p>`;
+            userInput.value = '';
+            
+            // Add thinking message
+            chatArea.innerHTML += `<p id="thinking"><strong>Parchat:</strong> Thinking...</p>`;
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            // Send to backend
+            fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    question: message,
+                    model: 'llama3.2:3b'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove thinking message
+                document.getElementById('thinking').remove();
+                
+                // Add response
+                if (data.answer) {
+                    chatArea.innerHTML += `<p><strong>Parchat:</strong> ${data.answer}</p>`;
+                } else if (data.error) {
+                    chatArea.innerHTML += `<p><strong>Error:</strong> ${data.error}</p>`;
+                }
+                chatArea.scrollTop = chatArea.scrollHeight;
+            })
+            .catch(error => {
+                document.getElementById('thinking').remove();
+                chatArea.innerHTML += `<p><strong>Error:</strong> ${error}</p>`;
+                chatArea.scrollTop = chatArea.scrollHeight;
+            });
+        }
+        
+        // Allow Enter key to send message
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
